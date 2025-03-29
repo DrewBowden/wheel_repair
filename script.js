@@ -12,6 +12,8 @@ let isDrawing = false;
 let maskCenter = null;
 let maskRadius = 0;
 let imgScale = 1; // To track the scaling factor of the image
+let offsetX = 0; // To center the image horizontally
+let offsetY = 0; // To center the image vertically
 
 // Handle image upload
 imageUpload.addEventListener("change", (e) => {
@@ -24,27 +26,27 @@ imageUpload.addEventListener("change", (e) => {
   const reader = new FileReader();
   reader.onload = (event) => {
     img.onload = () => {
-      // Calculate the scaling factor to fit the image within the canvas
-      const maxCanvasWidth = 600; // Maximum canvas width
-      const maxCanvasHeight = 400; // Maximum canvas height
+      // Get the canvas dimensions
+      const canvasWidth = previewCanvas.width;
+      const canvasHeight = previewCanvas.height;
+
+      // Get the image dimensions
       const imgWidth = img.width;
       const imgHeight = img.height;
 
-      // Scale the image to fit within the canvas
-      if (imgWidth > maxCanvasWidth || imgHeight > maxCanvasHeight) {
-        const widthRatio = maxCanvasWidth / imgWidth;
-        const heightRatio = maxCanvasHeight / imgHeight;
-        imgScale = Math.min(widthRatio, heightRatio); // Use the smaller ratio to maintain aspect ratio
-      } else {
-        imgScale = 1; // No scaling needed
-      }
+      // Calculate the scaling factor to fit the image within the canvas
+      const widthRatio = canvasWidth / imgWidth;
+      const heightRatio = canvasHeight / imgHeight;
+      imgScale = Math.min(widthRatio, heightRatio); // Use the smaller ratio to maintain aspect ratio
 
-      // Set canvas dimensions based on scaled image
-      previewCanvas.width = imgWidth * imgScale;
-      previewCanvas.height = imgHeight * imgScale;
+      // Calculate offsets to center the image
+      const scaledWidth = imgWidth * imgScale;
+      const scaledHeight = imgHeight * imgScale;
+      offsetX = (canvasWidth - scaledWidth) / 2;
+      offsetY = (canvasHeight - scaledHeight) / 2;
 
-      // Draw the scaled image on the canvas
-      ctx.drawImage(img, 0, 0, imgWidth * imgScale, imgHeight * imgScale);
+      // Clear the canvas and draw the scaled image
+      redrawCanvas();
 
       // Hide spinner and download button
       spinner.style.display = "none";
@@ -97,8 +99,8 @@ previewCanvas.addEventListener("mousedown", (e) => {
   // Get the starting point of the mask
   const rect = previewCanvas.getBoundingClientRect();
   maskCenter = {
-    x: (e.clientX - rect.left) / imgScale, // Adjust for scaling
-    y: (e.clientY - rect.top) / imgScale, // Adjust for scaling
+    x: (e.clientX - rect.left - offsetX) / imgScale, // Adjust for scaling and centering
+    y: (e.clientY - rect.top - offsetY) / imgScale, // Adjust for scaling and centering
   };
 });
 
@@ -108,8 +110,8 @@ previewCanvas.addEventListener("mousemove", (e) => {
 
   const rect = previewCanvas.getBoundingClientRect();
   const currentPos = {
-    x: (e.clientX - rect.left) / imgScale, // Adjust for scaling
-    y: (e.clientY - rect.top) / imgScale, // Adjust for scaling
+    x: (e.clientX - rect.left - offsetX) / imgScale, // Adjust for scaling and centering
+    y: (e.clientY - rect.top - offsetY) / imgScale, // Adjust for scaling and centering
   };
 
   maskRadius = Math.sqrt(
@@ -134,7 +136,13 @@ previewCanvas.addEventListener("mouseup", () => {
     ctx.fillStyle = colorPicker.value;
     ctx.globalAlpha = 0.5;
     ctx.beginPath();
-    ctx.arc(maskCenter.x, maskCenter.y, maskRadius, 0, Math.PI * 2);
+    ctx.arc(
+      maskCenter.x * imgScale + offsetX, // Adjust for scaling and centering
+      maskCenter.y * imgScale + offsetY, // Adjust for scaling and centering
+      maskRadius * imgScale, // Adjust for scaling
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
     ctx.restore();
   }
@@ -143,13 +151,29 @@ previewCanvas.addEventListener("mouseup", () => {
 // Redraw the canvas (image only)
 function redrawCanvas() {
   ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-  ctx.drawImage(img, 0, 0, img.width * imgScale, img.height * imgScale);
+  ctx.drawImage(
+    img,
+    0,
+    0,
+    img.width,
+    img.height,
+    offsetX,
+    offsetY,
+    img.width * imgScale,
+    img.height * imgScale
+  );
 }
 
 // Draw the mask outline
 function drawMaskOutline() {
   ctx.beginPath();
-  ctx.arc(maskCenter.x, maskCenter.y, maskRadius, 0, Math.PI * 2);
+  ctx.arc(
+    maskCenter.x * imgScale + offsetX, // Adjust for scaling and centering
+    maskCenter.y * imgScale + offsetY, // Adjust for scaling and centering
+    maskRadius * imgScale, // Adjust for scaling
+    0,
+    Math.PI * 2
+  );
   ctx.strokeStyle = "red";
   ctx.lineWidth = 2;
   ctx.stroke();
@@ -162,6 +186,10 @@ resetBtn.addEventListener("click", () => {
 
   // Reset the form
   document.getElementById("uploadForm").reset();
+
+  // Reset variables
+  maskCenter = null;
+  maskRadius = 0;
 
   // Hide the download button
   downloadBtn.style.display = "none";
