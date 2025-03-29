@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alloy Wheel Repair & Paint</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    #preview {
+      margin-top: 20px;
+      max-width: 100%;
+      border: 1px solid #ddd;
+    }
+    .color-picker {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Alloy Wheel Repair & Paint</h1>
+    <p>Upload an image of your wheel and pick a paint color!</p>
+
+    <form id="uploadForm">
+      <input type="file" id="imageUpload" accept="image/*" required>
+      <div class="color-picker">
+        <label for="colorPicker">Pick a color:</label>
+        <input type="color" id="colorPicker" value="#000000">
+      </div>
+      <button type="submit">Preview</button>
+    </form>
+
+    <canvas id="preview" width="400" height="400"></canvas>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
