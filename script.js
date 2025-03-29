@@ -4,12 +4,14 @@ const colorPicker = document.getElementById("colorPicker");
 const previewCanvas = document.getElementById("preview");
 const ctx = previewCanvas.getContext("2d");
 const downloadBtn = document.getElementById("downloadBtn");
+const resetBtn = document.getElementById("resetBtn");
 const spinner = document.getElementById("loadingSpinner");
 
 let img = new Image(); // To store the uploaded image
 let isDrawing = false;
 let maskCenter = null;
 let maskRadius = 0;
+let imgScale = 1; // To track the scaling factor of the image
 
 // Handle image upload
 imageUpload.addEventListener("change", (e) => {
@@ -22,12 +24,27 @@ imageUpload.addEventListener("change", (e) => {
   const reader = new FileReader();
   reader.onload = (event) => {
     img.onload = () => {
-      // Resize canvas to match image dimensions
-      previewCanvas.width = img.width;
-      previewCanvas.height = img.height;
+      // Calculate the scaling factor to fit the image within the canvas
+      const maxCanvasWidth = 600; // Maximum canvas width
+      const maxCanvasHeight = 400; // Maximum canvas height
+      const imgWidth = img.width;
+      const imgHeight = img.height;
 
-      // Draw the uploaded image on the canvas
-      ctx.drawImage(img, 0, 0, img.width, img.height);
+      // Scale the image to fit within the canvas
+      if (imgWidth > maxCanvasWidth || imgHeight > maxCanvasHeight) {
+        const widthRatio = maxCanvasWidth / imgWidth;
+        const heightRatio = maxCanvasHeight / imgHeight;
+        imgScale = Math.min(widthRatio, heightRatio); // Use the smaller ratio to maintain aspect ratio
+      } else {
+        imgScale = 1; // No scaling needed
+      }
+
+      // Set canvas dimensions based on scaled image
+      previewCanvas.width = imgWidth * imgScale;
+      previewCanvas.height = imgHeight * imgScale;
+
+      // Draw the scaled image on the canvas
+      ctx.drawImage(img, 0, 0, imgWidth * imgScale, imgHeight * imgScale);
 
       // Hide spinner and download button
       spinner.style.display = "none";
@@ -80,8 +97,8 @@ previewCanvas.addEventListener("mousedown", (e) => {
   // Get the starting point of the mask
   const rect = previewCanvas.getBoundingClientRect();
   maskCenter = {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top,
+    x: (e.clientX - rect.left) / imgScale, // Adjust for scaling
+    y: (e.clientY - rect.top) / imgScale, // Adjust for scaling
   };
 });
 
@@ -91,8 +108,8 @@ previewCanvas.addEventListener("mousemove", (e) => {
 
   const rect = previewCanvas.getBoundingClientRect();
   const currentPos = {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top,
+    x: (e.clientX - rect.left) / imgScale, // Adjust for scaling
+    y: (e.clientY - rect.top) / imgScale, // Adjust for scaling
   };
 
   maskRadius = Math.sqrt(
@@ -126,7 +143,7 @@ previewCanvas.addEventListener("mouseup", () => {
 // Redraw the canvas (image only)
 function redrawCanvas() {
   ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-  ctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+  ctx.drawImage(img, 0, 0, img.width * imgScale, img.height * imgScale);
 }
 
 // Draw the mask outline
@@ -138,8 +155,7 @@ function drawMaskOutline() {
   ctx.stroke();
 }
 
-const resetBtn = document.getElementById("resetBtn");
-
+// Handle reset button click
 resetBtn.addEventListener("click", () => {
   // Clear the canvas
   ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
